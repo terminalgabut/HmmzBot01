@@ -127,7 +127,7 @@ async def welcome():
         "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
         "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
         "**Menu pilihan:**"
-        "**- Mengaji**" "**- Belajar** " "**- Hiburan** " "**- Ide Kreatif** " "**- Bantuan Teknis** " "**-Info Cepat** ""**-Cerita** " "**- Ramalan Zodiak** " "**- Puisi** " "**- Test MBTI**"
-        "Butuh rekomendasi hari ini?"
+        <p>-Mengaji  -Belajar  -Hiburan  -Ide Kreatif  -Bantuan Teknis  -Info Cepat  -Berita  -Cerita  -Ramalan Zodiak  -Puisi  -Test MBTI  -Nasihat  -Dongeng  -Cerpen</p>
+        <p>"Butuh rekomendasi hari ini?"</p>
     )
     return {"reply": welcome_message}
