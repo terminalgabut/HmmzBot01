@@ -4,18 +4,31 @@ import logging
 import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-# Import middleware CORS
-form fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
+# Inisialisasi aplikasi FastAPI
 app = FastAPI()
 
-# Ganti 'default_key' dengan None untuk mencegah penggunaan kunci yang tidak valid
+# Tambahkan Middleware CORS
+# * Izinkan permintaan dari semua domain
+# * Izinkan kredensial (cookies, authorization headers)
+# * Izinkan semua metode HTTP (GET, POST, dll.)
+# * Izinkan semua header
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Konfigurasi logging
+logging.basicConfig(level=logging.INFO)
+
+# Mengambil variabel lingkungan (Environment Variables)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-20b"
-
-# Konfigurasi logging agar lebih informatif
-logging.basicConfig(level=logging.INFO)
 
 SYSTEM_PROMPT = {
     "role": "system",
@@ -23,7 +36,7 @@ SYSTEM_PROMPT = {
 }
 
 def call_openrouter_api(user_message: str) -> str:
-    # Periksa apakah API key sudah disetel
+    """Mengirim pesan ke API OpenRouter dan mengembalikan respons."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
         return "❌ Error: API key tidak ditemukan."
@@ -41,33 +54,37 @@ def call_openrouter_api(user_message: str) -> str:
             "max_tokens": 1000,
             "temperature": 0.7
         }
+        
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()
+        response.raise_for_status()  # Ini akan memunculkan error untuk status 4xx/5xx
+        
         data = response.json()
         return data["choices"][0]["message"]["content"]
+    
     except requests.exceptions.RequestException as e:
-        # Menangkap error khusus dari requests
         logging.error(f"API request error: {e}")
-        return "❌ Error saat menghubungi AI (request failed)."
+        return "❌ Error saat menghubungi AI (permintaan gagal)."
     except Exception as e:
-        # Menangkap error umum lainnya (misalnya, parsing JSON)
         logging.error(f"API processing error: {e}")
         return "❌ Error saat memproses respons AI."
 
 @app.get("/ping")
 async def ping():
+    """Endpoint untuk memeriksa status server."""
     return {"status": "ok"}
 
 @app.post("/chat")
 async def chat(request: Request):
+    """Endpoint untuk menerima pesan dan membalasnya."""
     try:
         body = await request.json()
         user_message = body.get("message", "").strip()
         if not user_message:
             return JSONResponse({"error": "Pesan kosong"}, status_code=400)
+        
         reply = call_openrouter_api(user_message)
         return {"reply": reply}
+    
     except Exception as e:
         logging.error(f"Request body error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
-
