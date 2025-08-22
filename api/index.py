@@ -40,7 +40,7 @@ BASE_SYSTEM_PROMPT = {
 MODE_SETTINGS = {
     "qa": {
         "max_tokens": 600,
-        "temperature": 0.1,
+        "temperature": 0.5,
         "top_p": 0.8
     },
     "creative": {
