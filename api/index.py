@@ -116,3 +116,22 @@ async def chat(request: Request):
     except Exception as e:
         logging.error(f"Request body error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
+
+# =========================
+# Pesan awal / welcome message
+# =========================
+@app.get("/welcome")
+async def welcome():
+    """Mengirim pesan awal/welcome message dari bot."""
+    welcome_message = (
+        "**Assalamu'alaikum warahmatullahi wabarakatuh**\n"
+        "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
+        "**Menu pilihan:**\n"
+        "- 📚 **Belajar** - Penjelasan topik apa saja\n"
+        "- 🎉 **Hiburan** - Lelucon, cerita, atau games\n"
+        "- 💡 **Ide Kreatif** - Brainstorming dan inspirasi\n"
+        "- 🔧 **Bantuan Teknis** - Solusi masalah teknis\n"
+        "- ⚡ **Info Cepat** - Fakta dan informasi singkat\n\n"
+        "Butuh rekomendasi hari ini?"
+    )
+    return {"reply": welcome_message}
