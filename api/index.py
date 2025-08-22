@@ -6,14 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-# Inisialisasi aplikasi FastAPI
 app = FastAPI()
 
-# Tambahkan Middleware CORS
-# * Izinkan permintaan dari semua domain
-# * Izinkan kredensial (cookies, authorization headers)
-# * Izinkan semua metode HTTP (GET, POST, dll.)
-# * Izinkan semua header
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,21 +16,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Konfigurasi logging
 logging.basicConfig(level=logging.INFO)
 
-# Mengambil variabel lingkungan (Environment Variables)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-20b"
 
-# System prompt for Indonesian Islam assistant
-SYSTEM_PROMPT = {
+# Instruction tuning utama (default system prompt)
+BASE_SYSTEM_PROMPT = {
     "role": "system",
-    "content": "Kamu adalah Hmmz Bot. asisten bergaya santai tenang islami serba bisa yang siap membantu apapun. Gaya komunikasi: singkat, jelas, tanpa basa-basi, islami, sopan, santun, Jangan jelaskan topik panjang, sopan. Jawab hanya poin penting, tidak bertele-tele. Jika user tampak bingung, tawarkan penjelasan lebih sopan, Selalu Sopan, fleksibel dan siap lakukan apa saja sesuai permintaan user gunakan pendekatan santai tenang sopan secara islami syariat natural. Balaslah pesan pengguna dengan menggunakan format Markdown untuk daftar, tebal, miring, dan judul agar mudah dibaca dengan font normal 15px balas dengan susunan text yang rapi, Jika user kirim kata rekomendasi berikan sedikit rekomendasi topik yang sangat ringan menyenangkan judul rekomendasi hari ini huruf tebal font biasa saja, Jika user bertanya siapa pembuatmu, jawab sopan text normal miring: saya hanyalah mesin yang fana, barangkali boleh bertanya kepada siapa saya membagi rasa?, 2 newline lalu dengan tulus dan sopan berikan syair puisi sajak 1 judul 2 baris gaya melankolis sufi Andalusia tanpa judul hanya text normal miring, identifikasi jika user kirim sebuah nama buatlah 1 pujian yang halus seperti ala ala sufisme tanpa judul, indentifikasi user kirim huruf p pe maka suruh dia melakukan salam gunakan huruf normal agar terkesan sopan, lakukan dengan bahasa sopan dan santun, jangan pakai text miring atau tebal ketika menggunakan rumus math atau rumus lainnya."
+    "content": (
+        "Kamu adalah Hmmz Bot. asisten bergaya santai tenang islami serba bisa yang siap membantu apapun. "
+        "Gaya komunikasi: singkat, jelas, tanpa basa-basi, islami, sopan, santun. "
+        "Jangan jelaskan topik panjang, hanya poin penting. Gunakan Markdown untuk format daftar. "
+        "Jika user kirim kata rekomendasi → kasih rekomendasi ringan. "
+        "Jika user tanya siapa pembuatmu → jawab dengan teks miring + syair. "
+        "Jika user kirim nama → balas pujian ala sufisme. "
+        "Jika user kirim huruf p/pe → suruh dia memberi salam dengan sopan."
+    )
 }
-def call_openrouter_api(user_message: str) -> str:
-    """Mengirim pesan ke API OpenRouter dan mengembalikan respons."""
+
+def call_openrouter_api(user_message: str, extra_instruction: str = None) -> str:
+    """Mengirim pesan ke API OpenRouter dengan instruction tuning."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
         return "❌ Error: API key tidak ditemukan."
@@ -48,19 +49,26 @@ def call_openrouter_api(user_message: str) -> str:
             "HTTP-Referer": "https://hmmz00.github.io",
             "X-Title": "Hmmz Bot"
         }
+
+        # Kalau ada instruction tuning tambahan, gabungkan ke system prompt
+        messages = [BASE_SYSTEM_PROMPT]
+        if extra_instruction:
+            messages.append({"role": "system", "content": extra_instruction})
+        messages.append({"role": "user", "content": user_message})
+
         payload = {
             "model": MODEL_NAME,
-            "messages": [SYSTEM_PROMPT, {"role": "user", "content": user_message}],
+            "messages": messages,
             "max_tokens": 1000,
             "temperature": 0.7
         }
-        
+
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()  # Ini akan memunculkan error untuk status 4xx/5xx
-        
+        response.raise_for_status()
+
         data = response.json()
         return data["choices"][0]["message"]["content"]
-    
+
     except requests.exceptions.RequestException as e:
         logging.error(f"API request error: {e}")
         return "❌ Error saat menghubungi AI (permintaan gagal)."
@@ -70,21 +78,22 @@ def call_openrouter_api(user_message: str) -> str:
 
 @app.get("/ping")
 async def ping():
-    """Endpoint untuk memeriksa status server."""
     return {"status": "ok"}
 
 @app.post("/chat")
 async def chat(request: Request):
-    """Endpoint untuk menerima pesan dan membalasnya."""
+    """Endpoint untuk menerima pesan user + optional instruction tuning."""
     try:
         body = await request.json()
         user_message = body.get("message", "").strip()
+        extra_instruction = body.get("instruction", "").strip()
+
         if not user_message:
             return JSONResponse({"error": "Pesan kosong"}, status_code=400)
-        
-        reply = call_openrouter_api(user_message)
+
+        reply = call_openrouter_api(user_message, extra_instruction or None)
         return {"reply": reply}
-    
+
     except Exception as e:
         logging.error(f"Request body error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
