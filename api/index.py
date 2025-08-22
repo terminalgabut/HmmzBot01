@@ -141,7 +141,10 @@ async def welcome():
     "- Test MBTI\n"
     "- Nasihat\n"
     "- Dongeng\n"
-    "- Cerpen\n\n"
+    "- Cerpen\n"
+    "- Tebak-tebakan\n"
+    "- Teka-teki\n"
+    "- Humor\n\n"
     "\"Butuh rekomendasi hari ini?\""
 
     )
