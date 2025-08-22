@@ -36,8 +36,22 @@ BASE_SYSTEM_PROMPT = {
     )
 }
 
-def call_openrouter_api(user_message: str, extra_instruction: str = None) -> str:
-    """Mengirim pesan ke API OpenRouter dengan instruction tuning."""
+# Preset untuk mode QA dan Creative
+MODE_SETTINGS = {
+    "qa": {
+        "max_tokens": 600,
+        "temperature": 0.2,
+        "top_p": 0.8
+    },
+    "creative": {
+        "max_tokens": 1000,
+        "temperature": 0.9,
+        "top_p": 0.95
+    }
+}
+
+def call_openrouter_api(user_message: str, extra_instruction: str = None, mode: str = "qa") -> str:
+    """Mengirim pesan ke API OpenRouter dengan instruction tuning + mode."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
         return "❌ Error: API key tidak ditemukan."
@@ -50,17 +64,21 @@ def call_openrouter_api(user_message: str, extra_instruction: str = None) -> str
             "X-Title": "Hmmz Bot"
         }
 
-        # Kalau ada instruction tuning tambahan, gabungkan ke system prompt
+        # Base system prompt
         messages = [BASE_SYSTEM_PROMPT]
         if extra_instruction:
             messages.append({"role": "system", "content": extra_instruction})
         messages.append({"role": "user", "content": user_message})
 
+        # Ambil setting sesuai mode, default ke QA
+        params = MODE_SETTINGS.get(mode, MODE_SETTINGS["qa"])
+
         payload = {
             "model": MODEL_NAME,
             "messages": messages,
-            "max_tokens": 1000,
-            "temperature": 0.7
+            "max_tokens": params["max_tokens"],
+            "temperature": params["temperature"],
+            "top_p": params["top_p"]
         }
 
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=15)
@@ -82,17 +100,18 @@ async def ping():
 
 @app.post("/chat")
 async def chat(request: Request):
-    """Endpoint untuk menerima pesan user + optional instruction tuning."""
+    """Endpoint untuk menerima pesan user + optional instruction tuning + mode."""
     try:
         body = await request.json()
         user_message = body.get("message", "").strip()
         extra_instruction = body.get("instruction", "").strip()
+        mode = body.get("mode", "qa").lower()  # default QA
 
         if not user_message:
             return JSONResponse({"error": "Pesan kosong"}, status_code=400)
 
-        reply = call_openrouter_api(user_message, extra_instruction or None)
-        return {"reply": reply}
+        reply = call_openrouter_api(user_message, extra_instruction or None, mode)
+        return {"reply": reply, "mode": mode}
 
     except Exception as e:
         logging.error(f"Request body error: {e}")
