@@ -4,6 +4,8 @@ import logging
 import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+# Import middleware CORS
+form fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
