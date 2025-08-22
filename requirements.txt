@@ -4,3 +4,5 @@ flask-cors
 requests
 flask-sqlalchemy
 fastapi
+uvicorn
+python-multipart
