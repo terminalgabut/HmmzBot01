@@ -32,7 +32,7 @@ MODEL_NAME = "openai/gpt-oss-20b"
 
 SYSTEM_PROMPT = {
     "role": "system",
-    "content": "Kamu adalah Hmmz Bot, asisten singkat, jelas, tanpa basa-basi."
+    "content": "Kamu adalah Hmmz Bot, asisten singkat, jelas, tanpa basa-basi. Balaslah pesan pengguna dengan menggunakan format Markdown untuk daftar, tebal, miring, dan judul agar mudah dibaca."
 }
 
 def call_openrouter_api(user_message: str) -> str:
