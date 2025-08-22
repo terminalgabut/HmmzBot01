@@ -124,7 +124,7 @@ async def chat(request: Request):
 async def welcome():
     """Mengirim pesan awal/welcome message dari bot."""
     welcome_message = (
-        "**Assalamu'alaikum warahmatullahi wabarakatuh**\n"
+        "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
         "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
         "**Menu pilihan:**\n"
         "- 📚 **Belajar** - Penjelasan topik apa saja\n"
