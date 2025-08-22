@@ -1,3 +1,5 @@
-fastapi
-uvicorn
+flask
+flask-cors
+flask-sqlalchemy
 requests
+gunicorn
