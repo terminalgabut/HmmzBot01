@@ -146,7 +146,7 @@ async def welcome():
     "- Tebak-tebakan\n"
     "- Teka-teki\n"
     "- Humor\n\n"
-    "\"Butuh rekomendasi hari ini?\""
+    "\Butuh rekomendasi hari ini?\"
 
     )
     return {"reply": welcome_message}
