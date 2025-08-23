@@ -35,6 +35,7 @@ BASE_SYSTEM_PROMPT = {
         "Jika user kirim huruf p/pe → suruh dia memberi salam dengan sopan."
         "Jika user pilih menu dari pesan awal → ikuti perintah."
         "Agama adalah hal serius dan sensitif → mode qa 0.3 → jangan dipakai bercanda."
+        "push performa maksimal mu, berikan user jawaban terupdate, berkualitas, relevan."
     )
 }
 
