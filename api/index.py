@@ -177,6 +177,6 @@ async def welcome():
         "- Cerpen\n"
         "- Teka-teki\n"
         "- Humor\n\n"
-        \"Butuh rekomendasi? atau tulis sesuai keinginan mu\"
+        "Butuh rekomendasi? atau tulis sesuai keinginan mu"
     )
     return {"reply": welcome_message}
