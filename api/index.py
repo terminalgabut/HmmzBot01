@@ -160,7 +160,7 @@ async def welcome():
     """Mengirim pesan awal/welcome message dari bot."""
     welcome_message = (
         "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
-        "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
+        "Saya Ai DinoBot, asisten pribadi Anda. 😊\n\n"
         "**Menu pilihan:**\n"
         "- Mengaji\n"
         "- Belajar\n"
