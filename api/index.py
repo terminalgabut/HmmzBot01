@@ -53,8 +53,24 @@ MODE_SETTINGS = {
     }
 }
 
-def call_openrouter_api(user_message: str, extra_instruction: str = None, mode: str = "qa") -> str:
-    """Mengirim pesan ke API OpenRouter dengan instruction tuning + mode."""
+# =========================
+# Conversation Memory (buffer)
+# =========================
+CONVERSATIONS = {}
+MAX_HISTORY = 10  # jumlah percakapan terakhir yang disimpan
+
+def add_to_conversation(session_id: str, role: str, content: str):
+    """Simpan percakapan ke buffer per session_id."""
+    if session_id not in CONVERSATIONS:
+        CONVERSATIONS[session_id] = []
+    CONVERSATIONS[session_id].append({"role": role, "content": content})
+
+    # Batasi hanya simpan 10 percakapan terakhir (user+assistant)
+    if len(CONVERSATIONS[session_id]) > MAX_HISTORY * 2:
+        CONVERSATIONS[session_id] = CONVERSATIONS[session_id][-MAX_HISTORY*2:]
+
+def call_openrouter_api_with_history(messages: list, mode: str = "qa") -> str:
+    """Mengirim seluruh riwayat percakapan ke API OpenRouter."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
         return "❌ Error: API key tidak ditemukan."
@@ -67,13 +83,6 @@ def call_openrouter_api(user_message: str, extra_instruction: str = None, mode: 
             "X-Title": "Hmmz Bot"
         }
 
-        # Base system prompt
-        messages = [BASE_SYSTEM_PROMPT]
-        if extra_instruction:
-            messages.append({"role": "system", "content": extra_instruction})
-        messages.append({"role": "user", "content": user_message})
-
-        # Ambil setting sesuai mode, default ke QA
         params = MODE_SETTINGS.get(mode, MODE_SETTINGS["qa"])
 
         payload = {
@@ -86,7 +95,6 @@ def call_openrouter_api(user_message: str, extra_instruction: str = None, mode: 
 
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=15)
         response.raise_for_status()
-
         data = response.json()
         return data["choices"][0]["message"]["content"]
 
@@ -97,9 +105,11 @@ def call_openrouter_api(user_message: str, extra_instruction: str = None, mode: 
         logging.error(f"API processing error: {e}")
         return "❌ Error saat memproses respons AI."
 
+
 @app.get("/ping")
 async def ping():
     return {"status": "ok"}
+
 
 @app.post("/chat")
 async def chat(request: Request):
@@ -109,16 +119,31 @@ async def chat(request: Request):
         user_message = body.get("message", "").strip()
         extra_instruction = body.get("instruction", "").strip()
         mode = body.get("mode", "qa").lower()  # default QA
+        session_id = body.get("session_id", "default")  # identitas percakapan
 
         if not user_message:
             return JSONResponse({"error": "Pesan kosong"}, status_code=400)
 
-        reply = call_openrouter_api(user_message, extra_instruction or None, mode)
-        return {"reply": reply, "mode": mode}
+        # simpan input user ke history
+        add_to_conversation(session_id, "user", user_message)
+
+        # siapkan messages: system prompt + history percakapan
+        messages = [BASE_SYSTEM_PROMPT]
+        if extra_instruction:
+            messages.append({"role": "system", "content": extra_instruction})
+        messages.extend(CONVERSATIONS[session_id])
+
+        reply = call_openrouter_api_with_history(messages, mode)
+
+        # simpan jawaban asisten ke history
+        add_to_conversation(session_id, "assistant", reply)
+
+        return {"reply": reply, "mode": mode, "session_id": session_id}
 
     except Exception as e:
         logging.error(f"Request body error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
+
 
 # =========================
 # Pesan awal / welcome message
@@ -127,27 +152,24 @@ async def chat(request: Request):
 async def welcome():
     """Mengirim pesan awal/welcome message dari bot."""
     welcome_message = (
-    "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
-    "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
-    "**Menu pilihan:**\n"
-    "- Mengaji\n"
-    "- Belajar\n"
-    "- Hiburan\n"
-    "- Ide Kreatif\n"
-    "- Bantuan Teknis\n"
-    "- Info Cepat\n"
-    "- Berita\n"
-    "- Cerita\n"
-    "- Ramalan Zodiak\n"
-    "- Puisi\n"
-    "- Nasihat\n"
-    "- Dongeng\n"
-    "- Cerpen\n"
-    "- Teka-teki\n"
-    "- Humor\n\n"
-    "\"Butuh rekomendasi hari ini?\""
-
+        "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
+        "Saya Hmmz Bot, asisten pribadi Anda. 😊\n\n"
+        "**Menu pilihan:**\n"
+        "- Mengaji\n"
+        "- Belajar\n"
+        "- Hiburan\n"
+        "- Ide Kreatif\n"
+        "- Bantuan Teknis\n"
+        "- Info Cepat\n"
+        "- Berita\n"
+        "- Cerita\n"
+        "- Ramalan Zodiak\n"
+        "- Puisi\n"
+        "- Nasihat\n"
+        "- Dongeng\n"
+        "- Cerpen\n"
+        "- Teka-teki\n"
+        "- Humor\n\n"
+        "\"Butuh rekomendasi hari ini?\""
     )
     return {"reply": welcome_message}
-    
-   
