@@ -139,11 +139,11 @@ async def welcome():
     "- Cerita\n"
     "- Ramalan Zodiak\n"
     "- Puisi\n"
-    "- Test MBTI\n"
+    
     "- Nasihat\n"
     "- Dongeng\n"
     "- Cerpen\n"
-    "- Tebak-tebakan\n"
+    
     "- Teka-teki\n"
     "- Humor\n\n"
     "\Butuh rekomendasi hari ini?\"
