@@ -52,13 +52,13 @@ BASE_SYSTEM_PROMPT = {
 # Preset untuk mode QA dan Creative
 MODE_SETTINGS = {
     "qa": {
-        "max_tokens": 600,
-        "temperature": 0.5,
-        "top_p": 0.8
+        "max_tokens": 3000,
+        "temperature": 0.3,
+        "top_p": 0.9
     },
     "creative": {
-        "max_tokens": 1000,
-        "temperature": 1.0,
+        "max_tokens": 5000,
+        "temperature": 0.9,
         "top_p": 0.95
     }
 }
