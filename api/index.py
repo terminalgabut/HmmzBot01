@@ -89,8 +89,8 @@ def call_openrouter_api_with_history(messages: list, mode: str = "qa") -> str:
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://hmmz00.github.io",
-            "X-Title": "Hmmz Bot"
+            "HTTP-Referer": "https://terminalgabut.github.io",
+            "X-Title": "DinoBot"
         }
 
         params = MODE_SETTINGS.get(mode, MODE_SETTINGS["qa"])
