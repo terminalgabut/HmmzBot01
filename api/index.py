@@ -154,6 +154,36 @@ async def chat(request: Request):
         logging.error(f"Request body error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
 
+# =========================================================
+# TAMBAHKAN FUNGSI BARU INI
+# =========================================================
+@app.post("/check")
+async def check(request: Request):
+    try:
+        # Mengambil data yang dikirim oleh JavaScript
+        body = await request.json()
+        answer = body.get("answer", "").strip()
+        materi = body.get("context", "").strip()
+
+        if not answer or not materi:
+            # Jika data tidak lengkap, kirim error
+            return JSONResponse({"error": "Jawaban atau konteks kosong"}, status_code=400)
+
+        # --- Di sinilah Anda memanggil logika AI Anda ---
+        # (Gantilah bagian ini dengan logika AI Anda yang sebenarnya)
+        # Contoh respons tiruan/dummy:
+        skor_hasil = 90
+        feedback_hasil = f"Ini adalah feedback untuk jawaban: '{answer}'. Jawaban Anda sudah sangat baik dan relevan dengan materi."
+        # -------------------------------------------------
+
+        # Mengembalikan respons dalam format yang DIBUTUHKAN oleh JavaScript
+        return {"score": skor_hasil, "feedback": feedback_hasil}
+
+    except Exception as e:
+        # Jika terjadi error di server, kirim pesan error
+        print(f"Error di endpoint /check: {e}")
+        return JSONResponse({"error": "Terjadi kesalahan di server"}, status_code=500)
+
 
 # =========================
 # Pesan awal / welcome message
