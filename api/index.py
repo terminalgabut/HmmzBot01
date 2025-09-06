@@ -79,7 +79,7 @@ def add_to_conversation(session_id: str, role: str, content: str):
     if len(CONVERSATIONS[session_id]) > MAX_HISTORY * 2:
         CONVERSATIONS[session_id] = CONVERSATIONS[session_id][-MAX_HISTORY*2:]
 
-def call_openrouter_api_with_history(messages: list, mode: str = "qa") -> str:
+def call_openrouter_api(messages: list, mode: str = "qa") -> str:
     """Mengirim seluruh riwayat percakapan ke API OpenRouter."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
