@@ -192,9 +192,9 @@ async def check(request: Request):
         Jawaban Siswa: "{answer}"
         ---
         Tugas Anda:
-        1. Evaluasi jawaban siswa berdasarkan relevansinya dengan materi dan pertanyaan.
-        2. Berikan skor numerik antara 0 hingga 10.
-        3. Berikan feedback yang jelas, singkat, dan membangun.
+        1. Evaluasi jawaban secara kritis berdasarkan relevansinya dengan materi dan pertanyaan.
+        2. Berikan skor numerik antara 0 hingga 10. jawaban tidak relevan skor 0.
+        3. Berikan feedback yang tegas, jelas, singkat, dan membangun.
         4. PENTING: Kembalikan jawaban Anda HANYA dalam format berikut, tanpa penjelasan tambahan:
         Skor: [skor Anda di sini]
         Feedback: [feedback Anda di sini]
