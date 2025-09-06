@@ -1,13 +1,24 @@
-# api/index.py
 import os
 import logging
 import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
+# =========================
+# Load env
+# =========================
+load_dotenv()
+
+# Supabase setup
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# FastAPI app
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,11 +29,13 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO)
 
+# =========================
+# OpenRouter setup
+# =========================
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL_NAME = "openai/gpt-oss-120b"
 
-# Instruction tuning utama (default system prompt)
 BASE_SYSTEM_PROMPT = {
     "role": "system",
     "content": (
@@ -49,38 +62,25 @@ BASE_SYSTEM_PROMPT = {
     )
 }
 
-# Preset untuk mode QA dan Creative
 MODE_SETTINGS = {
-    "qa": {
-        "max_tokens": 800,
-        "temperature": 0.2,
-        "top_p": 0.6
-    },
-    "creative": {
-        "max_tokens": 5000,
-        "temperature": 0.9,
-        "top_p": 0.95
-    }
+    "qa": {"max_tokens": 800, "temperature": 0.2, "top_p": 0.6},
+    "creative": {"max_tokens": 5000, "temperature": 0.9, "top_p": 0.95},
 }
 
 # =========================
-# Conversation Memory (buffer)
+# Conversation Memory
 # =========================
 CONVERSATIONS = {}
-MAX_HISTORY = 10  # jumlah percakapan terakhir yang disimpan
+MAX_HISTORY = 10
 
 def add_to_conversation(session_id: str, role: str, content: str):
-    """Simpan percakapan ke buffer per session_id."""
     if session_id not in CONVERSATIONS:
         CONVERSATIONS[session_id] = []
     CONVERSATIONS[session_id].append({"role": role, "content": content})
-
-    # Batasi hanya simpan 10 percakapan terakhir (user+assistant)
     if len(CONVERSATIONS[session_id]) > MAX_HISTORY * 2:
         CONVERSATIONS[session_id] = CONVERSATIONS[session_id][-MAX_HISTORY*2:]
 
 def call_openrouter_api(messages: list, mode: str = "qa") -> str:
-    """Mengirim seluruh riwayat percakapan ke API OpenRouter."""
     if not OPENROUTER_API_KEY:
         logging.error("OPENROUTER_API_KEY is not set.")
         return "❌ Error: API key tidak ditemukan."
@@ -92,9 +92,7 @@ def call_openrouter_api(messages: list, mode: str = "qa") -> str:
             "HTTP-Referer": "https://terminalgabut.github.io",
             "X-Title": "DinoBot"
         }
-
         params = MODE_SETTINGS.get(mode, MODE_SETTINGS["qa"])
-
         payload = {
             "model": MODEL_NAME,
             "messages": messages,
@@ -102,138 +100,122 @@ def call_openrouter_api(messages: list, mode: str = "qa") -> str:
             "temperature": params["temperature"],
             "top_p": params["top_p"]
         }
-
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=15)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"]
-
-    except requests.exceptions.RequestException as e:
-        logging.error(f"API request error: {e}")
-        return "❌ Error saat menghubungi AI (permintaan gagal)."
     except Exception as e:
-        logging.error(f"API processing error: {e}")
-        return "❌ Error saat memproses respons AI."
+        logging.error(f"API error: {e}")
+        return "❌ Error saat menghubungi AI."
 
-
+# =========================
+# API Endpoints
+# =========================
 @app.get("/ping")
 async def ping():
     return {"status": "ok"}
 
-
 @app.post("/chat")
 async def chat(request: Request):
-    """Endpoint untuk menerima pesan user + optional instruction tuning + mode."""
     try:
         body = await request.json()
         user_message = body.get("message", "").strip()
         extra_instruction = body.get("instruction", "").strip()
-        mode = body.get("mode", "qa").lower()  # default QA
-        session_id = body.get("session_id", "default")  # identitas percakapan
+        mode = body.get("mode", "qa").lower()
+        session_id = body.get("session_id", "default")
+        slug = body.get("slug", "").strip()  # <= ambil slug materi
 
         if not user_message:
             return JSONResponse({"error": "Pesan kosong"}, status_code=400)
 
-        # simpan input user ke history
+        # Jika ada slug → ambil materi dari Supabase
+        materi_content = ""
+        if slug:
+            try:
+                res = supabase.table("materials").select("content").eq("slug", slug).execute()
+                if res.data and len(res.data) > 0:
+                    materi_content = res.data[0]["content"]
+            except Exception as e:
+                logging.error(f"Gagal ambil materi dari Supabase: {e}")
+
+        # simpan input user
         add_to_conversation(session_id, "user", user_message)
 
-        # siapkan messages: system prompt + history percakapan
+        # rakit messages
         messages = [BASE_SYSTEM_PROMPT]
         if extra_instruction:
             messages.append({"role": "system", "content": extra_instruction})
+        if materi_content:
+            messages.append({"role": "system", "content": f"Gunakan materi berikut sebagai konteks:\n{materi_content}"})
         messages.extend(CONVERSATIONS[session_id])
 
         reply = call_openrouter_api(messages, mode)
 
-        # simpan jawaban asisten ke history
         add_to_conversation(session_id, "assistant", reply)
-
-        return {"reply": reply, "mode": mode, "session_id": session_id}
+        return {"reply": reply, "mode": mode, "session_id": session_id, "materi_used": bool(materi_content)}
 
     except Exception as e:
-        logging.error(f"Request body error: {e}")
+        logging.error(f"Chat error: {e}")
         return JSONResponse({"error": "Bad request body"}, status_code=400)
 
-# =========================================================
-# TAMBAHKAN FUNGSI BARU INI
-# =========================================================
 @app.post("/check")
 async def check(request: Request):
     try:
         body = await request.json()
         answer = body.get("answer", "").strip()
         materi = body.get("context", "").strip()
-        # Kita butuh session_id untuk tahu histori percakapannya
         session_id = body.get("session_id", "default")
 
         if not answer or not materi:
             return JSONResponse({"error": "Jawaban atau konteks kosong"}, status_code=400)
 
-        # 1. Ambil pertanyaan terakhir dari histori percakapan
         last_question = ""
         if session_id in CONVERSATIONS:
-            # Cari dari pesan terakhir ke belakang
             for msg in reversed(CONVERSATIONS[session_id]):
                 if msg["role"] == "assistant":
                     last_question = msg["content"]
                     break
-        
         if not last_question:
-            return JSONResponse({"error": "Tidak ada pertanyaan yang ditemukan di sesi ini."}, status_code=404)
+            return JSONResponse({"error": "Tidak ada pertanyaan di sesi ini."}, status_code=404)
 
-        # 2. Buat prompt yang detail untuk evaluasi AI
         prompt_evaluasi = f"""
-        Anda adalah seorang guru yang adil dan sedang memeriksa jawaban siswa.
+        Anda adalah seorang guru yang adil.
         
         Materi Pembelajaran: "{materi}"
         ---
-        Pertanyaan yang Diajukan: "{last_question}"
+        Pertanyaan: "{last_question}"
         ---
         Jawaban Siswa: "{answer}"
         ---
-        Tugas Anda:
-        1. Evaluasi jawaban secara kritis berdasarkan relevansinya dengan materi dan pertanyaan.
-        2. Berikan skor numerik antara 0 hingga 10. jawaban tidak relevan skor 0.
-        3. Berikan feedback yang tegas, jelas, singkat, dan membangun.
-        4. PENTING: Kembalikan jawaban Anda HANYA dalam format berikut, tanpa penjelasan tambahan:
-        Skor: [skor Anda di sini]
-        Feedback: [feedback Anda di sini]
+        Tugas:
+        1. Evaluasi jawaban secara kritis.
+        2. Skor 0-10 (0 bila tidak relevan).
+        3. Feedback singkat, tegas, membangun.
+        Format:
+        Skor: [angka]
+        Feedback: [teks]
         """
-        
-        # 3. Panggil API AI untuk evaluasi (menggunakan base prompt sistem)
+
         messages_for_check = [BASE_SYSTEM_PROMPT, {"role": "user", "content": prompt_evaluasi}]
         evaluasi_ai = call_openrouter_api(messages_for_check)
 
-        # 4. Parse skor dan feedback dari respons AI
-        skor_hasil = 0
-        feedback_hasil = "Gagal memproses feedback dari AI. Respons mentah: " + evaluasi_ai
-
+        skor_hasil, feedback_hasil = 0, evaluasi_ai
         try:
-            # Cari baris yang mengandung "Skor:" dan "Feedback:"
             for line in evaluasi_ai.split('\n'):
                 if "Skor:" in line:
-                    # Ambil angka dari baris "Skor: 85"
                     skor_hasil = int(''.join(filter(str.isdigit, line)))
                 if "Feedback:" in line:
-                    # Ambil teks setelah kata "Feedback: "
                     feedback_hasil = line.split(":", 1)[1].strip()
         except Exception as e:
-            print(f"Error saat parsing respons AI: {e}")
-            # Jika gagal parsing, tampilkan saja seluruh respons AI sebagai feedback
-            feedback_hasil = evaluasi_ai
+            logging.error(f"Parsing error: {e}")
 
         return {"score": skor_hasil, "feedback": feedback_hasil}
-
     except Exception as e:
-        print(f"Error di endpoint /check: {e}")
-        return JSONResponse({"error": "Terjadi kesalahan di server"}, status_code=500)
+        logging.error(f"Check error: {e}")
+        return JSONResponse({"error": "Server error"}, status_code=500)
 
-# =========================
-# Pesan awal / welcome message
-# =========================
 @app.get("/welcome")
 async def welcome():
-    """Mengirim pesan awal/welcome message dari bot."""
     welcome_message = (
         "**Assalamu'alaikum warahmatullahi wabarakatuh**\n\n"
         "Saya Ai DinoBot, asisten pribadi Anda. 😊\n\n"
