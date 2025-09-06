@@ -143,7 +143,7 @@ async def chat(request: Request):
             messages.append({"role": "system", "content": extra_instruction})
         messages.extend(CONVERSATIONS[session_id])
 
-        reply = call_openrouter_api_with_history(messages, mode)
+        reply = call_openrouter_api(messages, mode)
 
         # simpan jawaban asisten ke history
         add_to_conversation(session_id, "assistant", reply)
