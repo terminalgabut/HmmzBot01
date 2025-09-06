@@ -160,30 +160,73 @@ async def chat(request: Request):
 @app.post("/check")
 async def check(request: Request):
     try:
-        # Mengambil data yang dikirim oleh JavaScript
         body = await request.json()
         answer = body.get("answer", "").strip()
         materi = body.get("context", "").strip()
+        # Kita butuh session_id untuk tahu histori percakapannya
+        session_id = body.get("session_id", "default")
 
         if not answer or not materi:
-            # Jika data tidak lengkap, kirim error
             return JSONResponse({"error": "Jawaban atau konteks kosong"}, status_code=400)
 
-        # --- Di sinilah Anda memanggil logika AI Anda ---
-        # (Gantilah bagian ini dengan logika AI Anda yang sebenarnya)
-        # Contoh respons tiruan/dummy:
-        skor_hasil = 90
-        feedback_hasil = f"Ini adalah feedback untuk jawaban: '{answer}'. Jawaban Anda sudah sangat baik dan relevan dengan materi."
-        # -------------------------------------------------
+        # 1. Ambil pertanyaan terakhir dari histori percakapan
+        last_question = ""
+        if session_id in CONVERSATIONS:
+            # Cari dari pesan terakhir ke belakang
+            for msg in reversed(CONVERSATIONS[session_id]):
+                if msg["role"] == "assistant":
+                    last_question = msg["content"]
+                    break
+        
+        if not last_question:
+            return JSONResponse({"error": "Tidak ada pertanyaan yang ditemukan di sesi ini."}, status_code=404)
 
-        # Mengembalikan respons dalam format yang DIBUTUHKAN oleh JavaScript
+        # 2. Buat prompt yang detail untuk evaluasi AI
+        prompt_evaluasi = f"""
+        Anda adalah seorang guru yang adil dan sedang memeriksa jawaban siswa.
+        
+        Materi Pembelajaran: "{materi}"
+        ---
+        Pertanyaan yang Diajukan: "{last_question}"
+        ---
+        Jawaban Siswa: "{answer}"
+        ---
+        Tugas Anda:
+        1. Evaluasi jawaban siswa berdasarkan relevansinya dengan materi dan pertanyaan.
+        2. Berikan skor numerik antara 0 hingga 10.
+        3. Berikan feedback yang jelas, singkat, dan membangun.
+        4. PENTING: Kembalikan jawaban Anda HANYA dalam format berikut, tanpa penjelasan tambahan:
+        Skor: [skor Anda di sini]
+        Feedback: [feedback Anda di sini]
+        """
+        
+        # 3. Panggil API AI untuk evaluasi (menggunakan base prompt sistem)
+        messages_for_check = [BASE_SYSTEM_PROMPT, {"role": "user", "content": prompt_evaluasi}]
+        evaluasi_ai = call_openrouter_api(messages_for_check)
+
+        # 4. Parse skor dan feedback dari respons AI
+        skor_hasil = 0
+        feedback_hasil = "Gagal memproses feedback dari AI. Respons mentah: " + evaluasi_ai
+
+        try:
+            # Cari baris yang mengandung "Skor:" dan "Feedback:"
+            for line in evaluasi_ai.split('\n'):
+                if "Skor:" in line:
+                    # Ambil angka dari baris "Skor: 85"
+                    skor_hasil = int(''.join(filter(str.isdigit, line)))
+                if "Feedback:" in line:
+                    # Ambil teks setelah kata "Feedback: "
+                    feedback_hasil = line.split(":", 1)[1].strip()
+        except Exception as e:
+            print(f"Error saat parsing respons AI: {e}")
+            # Jika gagal parsing, tampilkan saja seluruh respons AI sebagai feedback
+            feedback_hasil = evaluasi_ai
+
         return {"score": skor_hasil, "feedback": feedback_hasil}
 
     except Exception as e:
-        # Jika terjadi error di server, kirim pesan error
         print(f"Error di endpoint /check: {e}")
         return JSONResponse({"error": "Terjadi kesalahan di server"}, status_code=500)
-
 
 # =========================
 # Pesan awal / welcome message
