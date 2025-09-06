@@ -6,3 +6,4 @@ flask-sqlalchemy
 fastapi
 uvicorn
 python-multipart
+supabase
