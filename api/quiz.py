@@ -2,22 +2,26 @@
 import os
 import logging
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from .utils import BASE_SYSTEM_PROMPT, call_openrouter_api
 
 router = APIRouter()
 
 @router.post("/")
-async def generate_quiz(material: dict):
+async def generate_quiz(request: Request):
     try:
+        body = await request.json()
+        material = body.get("content", "")
+
         messages = [
             {"role": "system", "content": BASE_SYSTEM_PROMPT},
-            {"role": "user", "content": material.get("content", "")},
+            {"role": "user", "content": material},
         ]
         result = call_openrouter_api(messages)
         return {"reply": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        
 @router.post("/quiz")
 async def generate_quiz(request: Request):
     try:
