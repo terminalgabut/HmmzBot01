@@ -1,87 +1,66 @@
 # api/quiz.py
+import os
 import logging
+import requests
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-# Import fungsi dari index.py
-from index import call_openrouter_api
+from .index import BASE_SYSTEM_PROMPT, call_openrouter_api  # impor dari index.py
 
 router = APIRouter()
 
-# =========================
-# Endpoint: generate quiz
-# =========================
-@router.post("/quiz/generate")
+@router.post("/quiz")
 async def generate_quiz(request: Request):
     try:
         body = await request.json()
-        materi_content = body.get("materi", "").strip()
-        jumlah = body.get("jumlah", 3)
+        materi = body.get("materi", "").strip()
+        session_id = body.get("session_id", "default")
 
-        if not materi_content:
+        if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Kamu adalah generator soal yang ahli dan profesional. "
-                    "Buat soal pilihan ganda harus dari materi berikut. "
-                    "Format jawaban HARUS JSON valid tanpa teks tambahan. "
-                    "Jangan tampilkan kunci jawaban dalam output."
-                    "Contoh:\n"
-                    "{\n"
-                    '  \"questions\": [\n'
-                    '    {\"id\": 1, \"question\": \"Apa ...?\", \"options\": [\"A\", \"B\", \"C\", \"D\"]}\n'
-                    "  ]\n"
-                    "}"
-                )
-            },
-            {"role": "user", "content": f"Buat {jumlah} soal dari materi ini:\n{materi_content}"}
-        ]
+        # Prompt untuk AI → wajib JSON valid
+        prompt_quiz = f"""
+        Buatkan 3 soal pilihan ganda berbasis teks berikut:
 
-        reply = call_openrouter_api(messages)
-        if not reply:
-            return JSONResponse({"error": "Gagal generate soal"}, status_code=500)
+        "{materi}"
 
-        return {"quiz": reply}
+        Aturan output:
+        - Kembalikan **JSON valid** tanpa tambahan teks lain.
+        - Struktur JSON HARUS seperti ini:
 
-    except Exception as e:
-        logging.error(f"Generate quiz error: {e}")
-        return JSONResponse({"error": "Bad request"}, status_code=400)
+        {{
+          "questions": [
+            {{
+              "id": "q1",
+              "question": "string",
+              "options": [
+                {{"key": "A", "text": "string"}},
+                {{"key": "B", "text": "string"}},
+                {{"key": "C", "text": "string"}},
+                {{"key": "D", "text": "string"}}
+              ],
+              "correct_answer": "A|B|C|D"
+            }}
+          ]
+        }}
+        - Jangan beri jawaban/kunci di luar field "correct_answer".
+        - Jangan beri catatan tambahan.
+        - Pastikan JSON valid.
+        """
 
-# =========================
-# Endpoint: check answer
-# =========================
-@router.post("/quiz/check")
-async def check_quiz(request: Request):
-    try:
-        body = await request.json()
-        user_answers = body.get("answers", {})
+        messages = [BASE_SYSTEM_PROMPT, {"role": "user", "content": prompt_quiz}]
+        ai_reply = call_openrouter_api(messages, mode="qa")
 
-        if not user_answers:
-            return JSONResponse({"error": "Jawaban kosong"}, status_code=400)
-
-        # Simpel: serahkan ke AI untuk koreksi
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Kamu adalah pemeriksa jawaban. "
-                    "Input berupa jawaban user dan soal asli. "
-                    "Keluarkan hasil dalam JSON valid:\n"
-                    "{ \"score\": X, \"feedback\": \"...\" }"
-                )
-            },
-            {"role": "user", "content": f"Periksa jawaban berikut:\n{user_answers}"}
-        ]
-
-        reply = call_openrouter_api(messages)
-        if not reply:
-            return JSONResponse({"error": "Gagal koreksi jawaban"}, status_code=500)
-
-        return {"result": reply}
+        # coba parsing JSON
+        import json
+        try:
+            parsed = json.loads(ai_reply)
+            return {"quiz": parsed, "session_id": session_id}
+        except Exception as e:
+            logging.error(f"JSON parse error: {e}, raw: {ai_reply}")
+            return JSONResponse({"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply}, status_code=500)
 
     except Exception as e:
-        logging.error(f"Check quiz error: {e}")
-        return JSONResponse({"error": "Bad request"}, status_code=400)
+        logging.error(f"Quiz error: {e}")
+        return JSONResponse({"error": "Server error"}, status_code=500)
