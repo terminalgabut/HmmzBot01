@@ -7,9 +7,10 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .quiz import router as quiz_router
 
-app.include_router(quiz_router)
-
 app = FastAPI()
+
+# router
+app.include_router(quiz_router, prefix="/quiz")
 
 app.add_middleware(
     CORSMiddleware,
