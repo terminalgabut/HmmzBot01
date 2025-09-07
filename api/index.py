@@ -5,7 +5,7 @@ import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from quiz import router as quiz_router
+from .quiz import router as quiz_router
 
 app.include_router(quiz_router)
 
