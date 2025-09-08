@@ -23,20 +23,20 @@ async def generate_quiz(request: Request):
         prompt_quiz_dimensi = f"""
         Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
-"{materi}"
+        "{materi}"
 
-Aturan output:
-- Setiap soal fokus ke satu dimensi kognitif berikut: 
-  1. Analisa
-  2. Logika
-  3. Pemecahan Masalah
-  4. Konsentrasi
-  5. Memori
-- Kembalikan **JSON valid** tanpa tambahan teks lain.
-- Struktur JSON HARUS seperti ini:
+        Aturan output:
+        - Setiap soal fokus ke satu dimensi kognitif berikut: 
+          1. Analisa
+          2. Logika
+          3. Pemecahan Masalah
+          4. Konsentrasi
+          5. Memori
+        - Kembalikan **JSON valid** tanpa tambahan teks lain.
+        - Struktur JSON HARUS seperti ini:
 
-{{
-  "questions": [
+    {{
+      "questions": [
     {{
       "id": "q1",
       "category": "jurumiya-bab1",
