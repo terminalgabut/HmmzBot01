@@ -1,4 +1,3 @@
-import os
 import logging
 import json
 import random
@@ -60,7 +59,7 @@ async def generate_quiz(request: Request):
             {"role": "user", "content": prompt_quiz}
         ]
 
-        ai_reply = call_openrouter_api(messages, mode="qa")
+        ai_reply = call_openrouter_api(messages)
         ai_reply_clean = ai_reply.strip()
 
         try:
@@ -70,14 +69,13 @@ async def generate_quiz(request: Request):
             for q in parsed.get("questions", []):
                 keys = ["A", "B", "C", "D"]
                 q["correct_answer"] = random.choice(keys)
-                # fallback kategori jika tidak ada
-                if "category" not in q:
+                if "category" not in q or not q["category"]:
                     q["category"] = "jurumiya-bab1"
 
             return {"quiz": parsed, "session_id": session_id}
 
         except json.JSONDecodeError as e:
-            logging.error(f"JSON parse error: {e}, raw: {ai_reply_clean}")
+            logging.error(f"JSON parse error: {e}, raw: {ai_reply_clean[:200]}")
             return JSONResponse(
                 {"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply_clean},
                 status_code=500
