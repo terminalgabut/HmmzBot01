@@ -1,20 +1,16 @@
 import logging
 import json
-import random
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from .utils import BASE_SYSTEM_PROMPT, call_openrouter_api
 
 router = APIRouter()
 
-# =========================
-# Endpoint utama: generate quiz
-# =========================
 @router.post("/quiz")
 async def generate_quiz(request: Request):
     """
     Generate quiz pilihan ganda berbasis teks materi.
-    Jawaban benar dipilih secara random di backend.
+    Jawaban benar disimpan sebagai teks, bukan A/B/C/D.
     """
     try:
         body = await request.json()
@@ -24,7 +20,6 @@ async def generate_quiz(request: Request):
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
-        # Prompt untuk AI → output JSON valid
         prompt_quiz = f"""
         Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
@@ -41,15 +36,16 @@ async def generate_quiz(request: Request):
               "category": "jurumiya-bab1",
               "question": "string",
               "options": [
-                {{"key": "A", "text": "string"}},
-                {{"key": "B", "text": "string"}},
-                {{"key": "C", "text": "string"}},
-                {{"key": "D", "text": "string"}}
-              ]
+                {{"text": "string"}},
+                {{"text": "string"}},
+                {{"text": "string"}},
+                {{"text": "string"}}
+              ],
+              "answer": "teks yang persis salah satu dari options"
             }}
           ]
         }}
-        - Jangan sertakan jawaban benar.
+        - Jangan sertakan huruf A/B/C/D di opsi.
         - Pastikan JSON valid.
         - category tetap "jurumiya-bab1".
         """
@@ -59,25 +55,26 @@ async def generate_quiz(request: Request):
             {"role": "user", "content": prompt_quiz}
         ]
 
-        ai_reply = call_openrouter_api(messages)
-        ai_reply_clean = ai_reply.strip()
+        ai_reply = call_openrouter_api(messages).strip()
 
         try:
-            parsed = json.loads(ai_reply_clean)
+            parsed = json.loads(ai_reply)
 
-            # ✅ Tambahkan jawaban benar secara random
             for q in parsed.get("questions", []):
-                keys = ["A", "B", "C", "D"]
-                q["correct_answer"] = random.choice(keys)
-                if "category" not in q or not q["category"]:
+                # flatten options jadi list string
+                q["options"] = [opt["text"] for opt in q["options"]]
+                # simpan jawaban benar sebagai teks
+                q["correct_answer"] = q.get("answer")
+                q.pop("answer", None)
+                if not q.get("category"):
                     q["category"] = "jurumiya-bab1"
 
             return {"quiz": parsed, "session_id": session_id}
 
         except json.JSONDecodeError as e:
-            logging.error(f"JSON parse error: {e}, raw: {ai_reply_clean[:200]}")
+            logging.error(f"JSON parse error: {e}, raw: {ai_reply[:200]}")
             return JSONResponse(
-                {"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply_clean},
+                {"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply},
                 status_code=500
             )
 
