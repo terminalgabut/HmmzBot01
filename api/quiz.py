@@ -21,27 +21,27 @@ async def generate_quiz(request: Request):
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
         prompt_quiz = f"""
-        Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
+Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
 
-                           "{materi}"
+"{materi}"
 
-        Aturan output:
-        - Setiap soal fokus ke satu dimensi kognitif berikut: 
-          1. Analisa
-          2. Logika
-          3. Pemecahan Masalah
-          4. Konsentrasi
-          5. Memori
-        - Kembalikan **JSON valid** tanpa tambahan teks lain.
-        - Struktur JSON HARUS seperti ini:
+Aturan output:
+- Setiap soal fokus pada satu dimensi kognitif berikut (urutan boleh acak):
+  1. Analisa
+  2. Logika
+  3. Pemecahan Masalah
+  4. Konsentrasi
+  5. Memori
+- Kembalikan **HANYA JSON valid** tanpa teks apapun di luar JSON.
+- Struktur JSON HARUS seperti ini:
 
-    {{
-      "questions": [
+{{
+  "questions": [
     {{
       "id": "q1",
       "category": "jurumiya-bab1",
       "dimension": "Analisa",
-      "question": "string",
+      "question": "string (soal singkat dan jelas)",
       "options": [
         {{"text": "string"}},
         {{"text": "string"}},
@@ -49,16 +49,17 @@ async def generate_quiz(request: Request):
         {{"text": "string"}}
       ],
       "answer": "teks yang persis salah satu dari options"
-        }}
-        ]
-        }}
+    }}
+  ]
+}}
 
-        - Jangan sertakan huruf A/B/C/D di opsi.
-        - Pastikan JSON valid.
-        - category tetap "jurumiya-bab1".
-        - jawaban benar harus jelas sesuai salah satu opsi.
-        - buat soal menantang dan relevan dengan materi.
-        """
+- Jangan sertakan huruf A/B/C/D.
+- Jangan tambahkan penjelasan, catatan, atau teks lain di luar JSON.
+- Pastikan jawaban benar selalu sesuai salah satu opsi.
+- Setiap soal harus menantang dan relevan dengan materi.
+- Gunakan tanda kutip yang benar dan hindari karakter escape yang rusak agar JSON valid.
+- Variasikan dimensi setiap soal sehingga kelima dimensi tercakup.
+"""
 
         messages = [
             {"role": "system", "content": BASE_SYSTEM_PROMPT},
