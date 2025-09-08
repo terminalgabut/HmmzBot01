@@ -1,12 +1,18 @@
 import os
 from supabase import create_client, Client
+from dotenv import load_dotenv # Library untuk membaca .env saat development lokal
 
-# Ambil URL dan Key dari environment variables untuk keamanan
-# Jika Anda masih dalam tahap development, Anda bisa menaruhnya langsung di sini
-# tapi JANGAN PERNAH push key Anda ke GitHub.
+# Memuat environment variables dari file .env (hanya untuk development lokal)
+# Vercel akan mengabaikan ini dan menggunakan variabel yang diatur di dashboard.
+load_dotenv()
 
-SUPABASE_URL = "https://jpxtbdawajjyrvqrgijd.supabase.co"
-SUPABASE_KEY = "KEY_RAHASIA_ANDA"
+# Ambil URL dan Key dari environment variables
+supabase_url = os.environ.get("SUPABASE_URL")
+supabase_key = os.environ.get("SUPABASE_KEY")
+
+# Cek apakah variabel ada, jika tidak, berikan error yang jelas
+if not supabase_url or not supabase_key:
+    raise ValueError("SUPABASE_URL dan SUPABASE_KEY harus diatur di environment variables.")
 
 # Inisialisasi client Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(supabase_url, supabase_key)
