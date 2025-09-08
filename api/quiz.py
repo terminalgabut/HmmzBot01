@@ -21,7 +21,7 @@ async def generate_quiz(request: Request):
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
         prompt_quiz = f"""
-        Buatkan 5 soal pilihan ganda berbasis teks berikut:
+        Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
 
                            "{materi}"
 
@@ -52,11 +52,6 @@ async def generate_quiz(request: Request):
         }}
         ]
         }}
-
-        - Jangan sertakan huruf A/B/C/D di opsi.
-        - Pastikan JSON valid.
-        - category tetap "jurumiya-bab1".
-        - jawaban benar harus jelas sesuai salah satu opsi.
         - buat soal menantang dan relevan dengan materi.
         """
 
