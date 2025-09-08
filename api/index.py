@@ -5,12 +5,12 @@ import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from api import quiz   # ⬅️ pastikan import
+from api import quiz
 
 app = FastAPI()
 
-# Tambah router quiz
-app.include_router(quiz.router, prefix="/api")  # ⬅️ ini WAJIB
+# TANPA prefix
+app.include_router(quiz.router)
 
 app.add_middleware(
     CORSMiddleware,
