@@ -9,7 +9,7 @@ router = APIRouter()
 @router.post("/quiz")
 async def generate_quiz(request: Request):
     """
-    Generate 5 soal pilihan ganda berbasis teks materi.
+    Generate 5 soal kritis memuat analisa, logika, pemecahan masalah, konsentrasi, dan memori pilihan ganda berbasis teks materi.
     Jawaban benar dicatat sebagai teks yang persis sama dengan salah satu opsi,
     bukan sebagai huruf A/B/C/D.
     """
@@ -24,12 +24,12 @@ async def generate_quiz(request: Request):
         # Prompt ini sudah bagus dan tidak perlu diubah.
         # AI diinstruksikan untuk mengembalikan "options" sebagai list of strings.
         prompt_quiz = f"""
-Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
+Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
              {materi}
 
 Aturan output:
-1. Setiap soal fokus pada satu dimensi kognitif berikut (urutan boleh acak):
+1. Setiap 1 soal HARUS FOKUS pada satu dimensi kognitif berikut (urutan boleh acak):
    - Analisa
    - Logika
    - Pemecahan Masalah
@@ -54,7 +54,7 @@ Aturan output:
 4. Jangan sertakan huruf A/B/C/D di opsi.
 5. Jangan tambahkan penjelasan, catatan, atau teks lain di luar JSON.
 6. Pastikan jawaban benar selalu sesuai salah satu opsi.
-7. Setiap soal harus menantang dan relevan dengan materi.
+7. Setiap soal harus menantang dan kritis relevan dengan materi.
 8. Gunakan tanda kutip yang benar dan hindari karakter escape yang rusak agar JSON valid.
 9. Variasikan dimensi setiap soal sehingga kelima dimensi tercakup.
 10. Nomor soal (`id`) harus otomatis urut q1..q5.
