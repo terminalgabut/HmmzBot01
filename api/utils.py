@@ -8,7 +8,7 @@ Kamu adalah asisten yang membuat soal kuis...
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-def call_openrouter_api(messages, model="gpt-4o-mini"):
+def call_openrouter_api(messages, model="openai/gpt-4o-mini-2024-07-18"):
     if not OPENROUTER_API_KEY:
         raise RuntimeError("❌ OPENROUTER_API_KEY tidak ditemukan di environment variables")
 
