@@ -15,7 +15,8 @@ async def get_user_stats(user_id: str):
     """
     try:
         # 1. Query data dari Supabase, hanya pilih kolom yang relevan
-        query = supabase.from_("kritika_attempts").select("dimension, score").eq("user_id", user_id)
+        query = supabase.from_("kritika_attempts").select("user_id, dimension, score").eq("user_id", user_id)
+
         response = query.execute()
 
         # Jika pengguna belum pernah mengerjakan kuis, kembalikan objek kosong
