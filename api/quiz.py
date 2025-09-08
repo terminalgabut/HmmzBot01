@@ -20,7 +20,7 @@ async def generate_quiz(request: Request):
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
-        prompt_quiz_dimensi = f"""
+        prompt_quiz = f"""
         Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
                            "{materi}"
