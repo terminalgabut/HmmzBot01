@@ -1,11 +1,10 @@
-# api/quiz.py
 import os
 import logging
+import json
+import random
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from .utils import BASE_SYSTEM_PROMPT, call_openrouter_api
-import json
-import random  # ✅ Ditambahkan untuk random correct answer
 
 router = APIRouter()
 
@@ -16,7 +15,7 @@ router = APIRouter()
 async def generate_quiz(request: Request):
     """
     Generate quiz pilihan ganda berbasis teks materi.
-    Jawaban benar dipilih secara random.
+    Jawaban benar dipilih secara random di backend.
     """
     try:
         body = await request.json()
@@ -26,7 +25,7 @@ async def generate_quiz(request: Request):
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
-        # Prompt untuk AI → output JSON valid (tanpa menentukan jawaban benar)
+        # Prompt untuk AI → output JSON valid
         prompt_quiz = f"""
         Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
@@ -40,6 +39,7 @@ async def generate_quiz(request: Request):
           "questions": [
             {{
               "id": "q1",
+              "category": "jurumiya-bab1",
               "question": "string",
               "options": [
                 {{"key": "A", "text": "string"}},
@@ -52,6 +52,7 @@ async def generate_quiz(request: Request):
         }}
         - Jangan sertakan jawaban benar.
         - Pastikan JSON valid.
+        - category tetap "jurumiya-bab1".
         """
 
         messages = [
@@ -69,16 +70,19 @@ async def generate_quiz(request: Request):
             for q in parsed.get("questions", []):
                 keys = ["A", "B", "C", "D"]
                 q["correct_answer"] = random.choice(keys)
+                # fallback kategori jika tidak ada
+                if "category" not in q:
+                    q["category"] = "jurumiya-bab1"
 
             return {"quiz": parsed, "session_id": session_id}
 
         except json.JSONDecodeError as e:
-            logging.error(f"JSON parse error: {e}, raw: {ai_reply}")
+            logging.error(f"JSON parse error: {e}, raw: {ai_reply_clean}")
             return JSONResponse(
-                {"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply},
+                {"error": "AI tidak menghasilkan JSON valid", "raw": ai_reply_clean},
                 status_code=500
             )
 
     except Exception as e:
         logging.error(f"Quiz error: {e}")
-        return JSONResponse({"error": "Server error"}, status_code=500)
+        return JSONResponse({"error": "Server error", "detail": str(e)}, status_code=500)
