@@ -9,8 +9,9 @@ router = APIRouter()
 @router.post("/quiz")
 async def generate_quiz(request: Request):
     """
-    Generate quiz pilihan ganda berbasis teks materi.
-    Jawaban benar disimpan sebagai teks, bukan A/B/C/D.
+    Generate 5 soal pilihan ganda berbasis teks materi.
+    Jawaban benar dicatat sebagai teks yang persis sama dengan salah satu opsi,
+    bukan sebagai huruf A/B/C/D.
     """
     try:
         body = await request.json()
