@@ -24,7 +24,7 @@ async def generate_quiz(request: Request):
         prompt_quiz = f"""
 Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
 
-\"\"\"{materi}\"\"\"
+             {materi}
 
 Aturan output:
 1. Setiap soal fokus pada satu dimensi kognitif berikut (urutan boleh acak):
