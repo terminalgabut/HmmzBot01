@@ -21,6 +21,8 @@ async def generate_quiz(request: Request):
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
+        # Prompt ini sudah bagus dan tidak perlu diubah.
+        # AI diinstruksikan untuk mengembalikan "options" sebagai list of strings.
         prompt_quiz = f"""
 Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
 
@@ -69,12 +71,18 @@ Aturan output:
         try:
             parsed = json.loads(ai_reply)
 
+            # PERBAIKAN UTAMA ADA DI SINI
             for q in parsed.get("questions", []):
-                # flatten options jadi list string
-                q["options"] = [opt["text"] for opt in q["options"]]
-                # simpan jawaban benar sebagai teks
-                q["correct_answer"] = q.get("answer")
-                q.pop("answer", None)
+                # DIHAPUS: Baris di bawah ini menyebabkan error karena mengasumsikan
+                # "options" adalah list of objects, padahal prompt meminta list of strings.
+                # q["options"] = [opt["text"] for opt in q["options"]]
+
+                # DISESUAIKAN: Logika ini dibuat lebih aman untuk menangani jika AI
+                # keliru menggunakan key "answer" bukannya "correct_answer".
+                if "answer" in q and "correct_answer" not in q:
+                    q["correct_answer"] = q.pop("answer")
+                
+                # Set default category jika tidak ada
                 if not q.get("category"):
                     q["category"] = "jurumiya-bab1"
 
@@ -90,3 +98,4 @@ Aturan output:
     except Exception as e:
         logging.error(f"Quiz error: {e}")
         return JSONResponse({"error": "Server error", "detail": str(e)}, status_code=500)
+
