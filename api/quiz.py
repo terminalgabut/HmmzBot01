@@ -23,7 +23,7 @@ async def generate_quiz(request: Request):
         prompt_quiz_dimensi = f"""
         Buatkan 5 soal pilihan ganda berbasis teks berikut:
 
-        "{materi}"
+                           "{materi}"
 
         Aturan output:
         - Setiap soal fokus ke satu dimensi kognitif berikut: 
