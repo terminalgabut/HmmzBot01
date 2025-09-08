@@ -24,17 +24,17 @@ async def generate_quiz(request: Request):
         prompt_quiz = f"""
 Buatkan 5 soal pilihan ganda berbasis teks berikut (ringkas poin penting):
 
-"{materi}"
+\"\"\"{materi}\"\"\"
 
 Aturan output:
-- Setiap soal fokus pada satu dimensi kognitif berikut (urutan boleh acak):
-  1. Analisa
-  2. Logika
-  3. Pemecahan Masalah
-  4. Konsentrasi
-  5. Memori
-- Kembalikan **HANYA JSON valid** tanpa teks apapun di luar JSON.
-- Struktur JSON HARUS seperti ini:
+1. Setiap soal fokus pada satu dimensi kognitif berikut (urutan boleh acak):
+   - Analisa
+   - Logika
+   - Pemecahan Masalah
+   - Konsentrasi
+   - Memori
+2. Kembalikan **HANYA JSON valid** tanpa teks apapun di luar JSON.
+3. Struktur JSON HARUS seperti ini:
 
 {{
   "questions": [
@@ -42,24 +42,21 @@ Aturan output:
       "id": "q1",
       "category": "jurumiya-bab1",
       "dimension": "Analisa",
-      "question": "string (soal singkat dan jelas)",
-      "options": [
-        {{"text": "string"}},
-        {{"text": "string"}},
-        {{"text": "string"}},
-        {{"text": "string"}}
-      ],
-      "answer": "teks yang persis salah satu dari options"
+      "question": "soal singkat dan jelas",
+      "options": ["opsi1", "opsi2", "opsi3", "opsi4"],
+      "correct_answer": "teks yang persis salah satu dari options"
     }}
   ]
 }}
 
-- Jangan sertakan huruf A/B/C/D.
-- Jangan tambahkan penjelasan, catatan, atau teks lain di luar JSON.
-- Pastikan jawaban benar selalu sesuai salah satu opsi.
-- Setiap soal harus menantang dan relevan dengan materi.
-- Gunakan tanda kutip yang benar dan hindari karakter escape yang rusak agar JSON valid.
-- Variasikan dimensi setiap soal sehingga kelima dimensi tercakup.
+4. Jangan sertakan huruf A/B/C/D di opsi.
+5. Jangan tambahkan penjelasan, catatan, atau teks lain di luar JSON.
+6. Pastikan jawaban benar selalu sesuai salah satu opsi.
+7. Setiap soal harus menantang dan relevan dengan materi.
+8. Gunakan tanda kutip yang benar dan hindari karakter escape yang rusak agar JSON valid.
+9. Variasikan dimensi setiap soal sehingga kelima dimensi tercakup.
+10. Nomor soal (`id`) harus otomatis urut q1..q5.
+11. Untuk user demo/guest, user_id boleh null; tidak perlu menyimpan attempt.
 """
 
         messages = [
