@@ -12,7 +12,7 @@ app = FastAPI()
 
 # TANPA prefix
 app.include_router(quiz.router)
-app.include_router(quiz.router)
+app.include_router(stats.router)
 
 app.add_middleware(
     CORSMiddleware,
