@@ -42,7 +42,7 @@ Aturan output:
   "questions": [
     {{
       "id": "q1",
-      "category": "jurumiya-bab1",
+      "category": "nahwu-bab1",
       "dimension": "Analisa",
       "question": "soal kritis bervariasi dan jelas sesuai materi",
       "options": ["opsi1", "opsi2", "opsi3", "opsi4"],
@@ -84,7 +84,7 @@ Aturan output:
                 
                 # Set default category jika tidak ada
                 if not q.get("category"):
-                    q["category"] = "jurumiya-bab1"
+                    q["category"] = "nahwu-bab1"
 
             return {"quiz": parsed, "session_id": session_id}
 
