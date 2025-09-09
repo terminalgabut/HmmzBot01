@@ -24,7 +24,7 @@ async def generate_quiz(request: Request):
         # Prompt ini sudah bagus dan tidak perlu diubah.
         # AI diinstruksikan untuk mengembalikan "options" sebagai list of strings.
         prompt_quiz = f"""
-Buatkan 5 soal pilihan ganda berbasis teks berikut:
+Buatkan 5 soal test iq pilihan ganda berbasis teks berikut:
 
              {materi}
 
