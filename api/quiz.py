@@ -44,7 +44,7 @@ Aturan output:
       "id": "q1",
       "category": "jurumiya-bab1",
       "dimension": "Analisa",
-      "question": "soal singkat dan jelas",
+      "question": "soal kritis bervariasi dan jelas sesuai materi",
       "options": ["opsi1", "opsi2", "opsi3", "opsi4"],
       "correct_answer": "teks yang persis salah satu dari options"
     }}
@@ -54,7 +54,7 @@ Aturan output:
 4. Jangan sertakan huruf A/B/C/D di opsi.
 5. Jangan tambahkan penjelasan, catatan, atau teks lain di luar JSON.
 6. Pastikan jawaban benar selalu sesuai salah satu opsi.
-7. Setiap soal harus menantang dan kritis relevan dengan materi.
+7. SETIAP SOAL HARUS MENANTANG dan kritis gunakan beberapa variasi soal: kecuali, yang bukan, soal cerita yang sesuai dengan materi.
 8. Gunakan tanda kutip yang benar dan hindari karakter escape yang rusak agar JSON valid.
 9. Variasikan dimensi setiap soal sehingga kelima dimensi tercakup.
 10. Nomor soal (`id`) harus otomatis urut q1..q5.
