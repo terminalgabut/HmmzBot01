@@ -7,12 +7,14 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from api import quiz
 from api import stats
+from api import iq
 
 app = FastAPI()
 
 # TANPA prefix
 app.include_router(quiz.router)
 app.include_router(stats.router)
+app.include_router(iq.router)
 
 app.add_middleware(
     CORSMiddleware,
