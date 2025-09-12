@@ -66,8 +66,8 @@ def calculate_iq_score(user_scores, global_stats):
 @router.get("/iq-score/{user_id}", tags=["IQ Calculation"])
 async def get_iq_score(user_id: str):
     """
-    Menghitung skor IQ ekuivalen untuk seorang pengguna.
-    Endpoint ini TIDAK mengganggu endpoint /stats/{user_id} yang sudah ada.
+    Menghitung skor IQ ekuivalen untuk seorang pengguna dengan logika pengaman
+    untuk akurasi yang rendah.
     """
     try:
         # 1. Ambil data mentah dari Supabase
@@ -77,7 +77,11 @@ async def get_iq_score(user_id: str):
 
         if not response.data:
             # Mengembalikan skor rata-rata jika user belum punya data
-            return JSONResponse(content={"iqScore": 100, "message": "No attempts found, returning average score."})
+            return JSONResponse(content={
+                "iqScore": 100, 
+                "accuracyScores": {},
+                "message": "No attempts found, returning average score."
+            })
 
         user_attempts = response.data
 
@@ -94,27 +98,46 @@ async def get_iq_score(user_id: str):
         
         final_accuracy_scores = {
             dim: (data["correct"] / data["count"]) * 100
-            for dim, data in accuracy_calculator.items()
+            for dim, data in accuracy_calculator.items() if data["count"] > 0
         }
+
+        # Handle jika tidak ada skor akurasi yang valid
+        if not final_accuracy_scores:
+             return JSONResponse(content={"iqScore": 85, "accuracyScores": {}})
 
         # 3. Hitung RATA-RATA SPEED MURNI (dalam detik)
         total_duration = sum(a.get("duration_seconds", 30) for a in user_attempts)
         avg_speed = total_duration / len(user_attempts)
 
-        # 4. Gabungkan semua skor individual milik user
-        all_user_scores = {**final_accuracy_scores, "speed": avg_speed}
+        # =======================================================
+        # === REVISI LOGIKA DENGAN SAFETY GATE DIMULAI DI SINI ===
+        # =======================================================
 
-        # 5. Ambil statistik global (dari fungsi helper)
-        global_stats = get_global_stats()
+        # 4. Hitung rata-rata akurasi murni pengguna
+        avg_accuracy = sum(final_accuracy_scores.values()) / len(final_accuracy_scores)
 
-        # 6. Hitung skor IQ final
-        iq_score = calculate_iq_score(all_user_scores, global_stats)
+        # 5. Tambahkan gerbang pengaman (safety gate)
+        # Jika rata-rata akurasi di bawah 20%, berikan skor IQ rendah secara langsung
+        if avg_accuracy < 20:
+            iq_score = 75 # Skor IQ rendah yang ditentukan
+        else:
+            # Jika akurasi cukup, baru jalankan kalkulasi normal
+            all_user_scores = {**final_accuracy_scores, "speed": avg_speed}
+            global_stats = get_global_stats()
+            iq_score = calculate_iq_score(all_user_scores, global_stats)
         
+        # =======================================================
+        # === REVISI LOGIKA SELESAI ===
+        # =======================================================
+
         if iq_score is None:
             raise HTTPException(status_code=404, detail="Could not calculate IQ score.")
 
-        # 7. Kembalikan hasil sederhana
-        return JSONResponse(content={"iqScore": iq_score})
+        # 6. Kembalikan paket data lengkap (termasuk data chart)
+        return JSONResponse(content={
+            "iqScore": iq_score,
+            "accuracyScores": final_accuracy_scores
+        })
 
     except Exception as e:
         # Memberikan detail error yang lebih baik untuk debugging
