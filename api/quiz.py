@@ -60,18 +60,19 @@ Aturan output:
 11. Untuk user demo/guest, user_id boleh null; tidak perlu menyimpan attempt.
 """
 
-        # ======================================================================
-        # PENTING: Baris di bawah ini akan mencetak prompt final ke terminal Anda.
-        # Ini akan membantu Anda melihat apakah ada yang aneh dengan isi 'materi'.
-        # ======================================================================
-        print("--- PROMPT LENGKAP DARI QUIZ.PY ---")
-        print(prompt_quiz)
-        print("--- AKHIR DARI PROMPT ---")
-        
-        messages = [
-            {"role": "system", "content": BASE_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt_quiz}
-        ]
+# ======================================================================
+# HAPUS print(prompt_quiz) YANG LAMA
+# GANTI DENGAN LOGGING YANG LEBIH BAIK SEPERTI INI:
+# ======================================================================
+logging.info(f"Menerima permintaan kuis.")
+logging.info(f"Panjang materi: {len(materi)} karakter.")
+logging.info(f"Potongan awal materi: {materi[:10]}...") # Hanya tampilkan 100 karakter pertama
+# ======================================================================
+
+messages = [
+    {"role": "system", "content": BASE_SYSTEM_PROMPT},
+    {"role": "user", "content": prompt_quiz}
+]
 
         ai_reply = call_openrouter_api(messages).strip()
 
