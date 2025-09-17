@@ -32,8 +32,8 @@ def call_openrouter_api(messages, model="openai/gpt-oss-120b"):
         "model": model,
         "messages": messages,
         # --- ADVANCED SETTINGS DITAMBAHKAN DI SINI ---
-        "temperature": 0.7,  # Mengontrol kreativitas AI (0.0 - 2.0)
-        "max_tokens": 2048,  # Membatasi panjang maksimal respons
+        "temperature": 0.2,  # Mengontrol kreativitas AI (0.0 - 2.0)
+        "max_tokens": 3048,  # Membatasi panjang maksimal respons
     }
 
     try:
