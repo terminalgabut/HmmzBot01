@@ -2,6 +2,7 @@ import logging
 import json
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+# Pastikan Anda mengimpor fungsi ini dengan benar dari lokasi file utilitas Anda
 from .utils import BASE_SYSTEM_PROMPT, call_openrouter_api
 
 router = APIRouter()
@@ -21,8 +22,6 @@ async def generate_quiz(request: Request):
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
 
-        # Prompt ini sudah bagus dan tidak perlu diubah.
-        # AI diinstruksikan untuk mengembalikan "options" sebagai list of strings.
         prompt_quiz = f"""
 Buatkan 5 soal test iq pilihan ganda berbasis teks berikut:
 
@@ -61,6 +60,14 @@ Aturan output:
 11. Untuk user demo/guest, user_id boleh null; tidak perlu menyimpan attempt.
 """
 
+        # ======================================================================
+        # PENTING: Baris di bawah ini akan mencetak prompt final ke terminal Anda.
+        # Ini akan membantu Anda melihat apakah ada yang aneh dengan isi 'materi'.
+        # ======================================================================
+        print("--- PROMPT LENGKAP DARI QUIZ.PY ---")
+        print(prompt_quiz)
+        print("--- AKHIR DARI PROMPT ---")
+        
         messages = [
             {"role": "system", "content": BASE_SYSTEM_PROMPT},
             {"role": "user", "content": prompt_quiz}
@@ -71,14 +78,8 @@ Aturan output:
         try:
             parsed = json.loads(ai_reply)
 
-            # PERBAIKAN UTAMA ADA DI SINI
             for q in parsed.get("questions", []):
-                # DIHAPUS: Baris di bawah ini menyebabkan error karena mengasumsikan
-                # "options" adalah list of objects, padahal prompt meminta list of strings.
-                # q["options"] = [opt["text"] for opt in q["options"]]
-
-                # DISESUAIKAN: Logika ini dibuat lebih aman untuk menangani jika AI
-                # keliru menggunakan key "answer" bukannya "correct_answer".
+                # Menangani jika AI keliru menggunakan key "answer"
                 if "answer" in q and "correct_answer" not in q:
                     q["correct_answer"] = q.pop("answer")
                 
@@ -98,4 +99,3 @@ Aturan output:
     except Exception as e:
         logging.error(f"Quiz error: {e}")
         return JSONResponse({"error": "Server error", "detail": str(e)}, status_code=500)
-
