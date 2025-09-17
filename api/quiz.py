@@ -2,8 +2,11 @@ import logging
 import json
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-# Pastikan Anda mengimpor fungsi ini dengan benar dari lokasi file utilitas Anda
+# Pastikan path impor ini sesuai dengan struktur folder Anda
 from .utils import BASE_SYSTEM_PROMPT, call_openrouter_api
+
+# Konfigurasi logging dasar
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 router = APIRouter()
 
@@ -21,6 +24,11 @@ async def generate_quiz(request: Request):
 
         if not materi:
             return JSONResponse({"error": "Materi kosong"}, status_code=400)
+
+        # Logging ringkas (hanya 3 baris)
+        logging.info(f"Menerima permintaan kuis untuk session: {session_id}")
+        logging.info(f"Panjang materi: {len(materi)} karakter.")
+        logging.info(f"Potongan awal materi: {materi[:80]}...") # Hanya 80 karakter pertama
 
         prompt_quiz = f"""
 Buatkan 5 soal test iq pilihan ganda berbasis teks berikut:
@@ -59,20 +67,11 @@ Aturan output:
 10. Nomor soal (`id`) harus otomatis urut q1..q5.
 11. Untuk user demo/guest, user_id boleh null; tidak perlu menyimpan attempt.
 """
-
-# ======================================================================
-# HAPUS print(prompt_quiz) YANG LAMA
-# GANTI DENGAN LOGGING YANG LEBIH BAIK SEPERTI INI:
-# ======================================================================
-logging.info(f"Menerima permintaan kuis.")
-logging.info(f"Panjang materi: {len(materi)} karakter.")
-logging.info(f"Potongan awal materi: {materi[:10]}...") # Hanya tampilkan 100 karakter pertama
-# ======================================================================
-
-messages = [
-    {"role": "system", "content": BASE_SYSTEM_PROMPT},
-    {"role": "user", "content": prompt_quiz}
-]
+        
+        messages = [
+            {"role": "system", "content": BASE_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_quiz}
+        ]
 
         ai_reply = call_openrouter_api(messages).strip()
 
